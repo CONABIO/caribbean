@@ -1,0 +1,8 @@
+*.swp
+*.pyc
+*.pyc[cod]
+.DS_Store
+.env
+.eggs/*
+__pycache__/
+.project
