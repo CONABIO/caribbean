@@ -6,7 +6,22 @@
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.contrib.gis.db import models
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    country = models.ForeignKey('MadmexCountry', models.DO_NOTHING)
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
 
 class MadmexCaribesample(models.Model):
     the_geom = models.GeometryField()
@@ -25,6 +40,7 @@ class MadmexCountry(models.Model):
     name = models.CharField(unique=True, max_length=100)
     the_geom = models.MultiPolygonField()
     added = models.DateTimeField()
+
 
     class Meta:
         managed = False
