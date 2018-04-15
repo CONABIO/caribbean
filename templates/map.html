@@ -1,0 +1,220 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <title>Quick Start - Leaflet</title>
+
+    <meta charset="utf-8" />
+
+		<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+		<script src='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.js'></script>
+		<link href='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.css' rel='stylesheet' />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.5/lodash.js"></script>
+    <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.2.0/leaflet-omnivore.min.js'></script>
+    <style>
+      body {
+      	margin:0;
+      	padding:0;
+      }
+      .map {
+      	position:absolute;
+      	left:0;
+      	width: 60%;
+      	height: 100%;
+      }
+      .controls {
+      	position:absolute;
+      	right: 0;
+      	width: 40%;
+      	height: 100%;
+      	background-color: #ccc;
+      }
+    </style>
+</head>
+<body>
+
+
+
+<div id="map" class="map"></div>
+<div class="controls">
+    <p>Country:</p>
+    <p id="country">Forest</p>
+    <p>Predicted class:</p>
+    <p id="predicted">Forest</p>
+    <p>Predicted class confidence:</p>
+    <p id="confidence">Forest</p>
+    <p>Interpret class:</p>
+    <p id="interpret">Forest</p>
+    <p>Forest</p>
+    <select id="classes">
+        <option>Forests</option>
+        <option>Bareland</option>
+        <option>Wetland</option>
+    </select>
+    <button id="update">Update</button>
+    <button>Validate</button>
+    <p>Validated objects:</p>
+    <p>3489</p>
+    <p>Objects remaining:</p>
+    <p>1729</p>
+    <div>
+        <button>Next</button>
+        <button>Previous</button>
+    <div>
+</div>
+<script>
+		L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZjtmJRw';
+    var map = L.mapbox.map('map', 'mapbox.satellite').setView([17.67267270, -61.87117753293441], 15);
+
+    var controlLayers = L.control.layers().addTo(map);
+    var polygonLayer = L.geoJSON();
+    controlLayers.addOverlay(polygonLayer, 'Caribbean Landcover');
+    polygonLayer.addTo(map);
+
+    map.on('moveend', function(event){
+    	console.log("Current position: " + map.getCenter());
+    });
+
+    var tagUrl = '/tag/';
+    var sampleUrl = '/sample/';
+    var countryUrl = '/country/';
+
+    
+
+    function loadUrl(url, callback) {
+    	fetch(url,{
+  			headers: {
+    					'Accept': 'application/json',
+    					'X-Requested-With': 'XMLHttpRequest'
+ 	 					},
+  					credentials: 'include'
+				})
+    		.then((response) => response.json())
+    		.then(function(data) {
+    			callback(data);
+    			if(data.next) {
+    				loadUrl(data.next, callback);
+    			}
+    		}).catch(function(error) {
+    			console.log(error)
+    		});
+    }
+
+    function printData(data) {
+      console.log(data)
+    }
+
+
+		var painted = [];
+		var tags = [];
+		var countries = [];
+		var selectedPolygonId = null;
+
+		function getInfoFromArray(myarray, id, field){
+        var color = null;
+        myarray.forEach(function(element){
+            if(element['id'] == id) {
+                color = element[field];
+            }
+        });
+        return color;
+    }
+
+
+    function paintPolygons(data) {
+    	  data['results'].forEach(function(obj){
+          var polygon = omnivore.wkt.parse(obj["the_geom"]);
+          painted.push(obj["pk"])
+          var color = "#fff";
+          color = getInfoFromArray(tags, obj["tag_editable"], "color");
+          polygon.on("click", function(event){
+          											selectedPolygonId = polygon._leaflet_id;
+									             	map.fitBounds(event.layer.getBounds());
+          											paintInfo(obj);
+          										});
+          polygon.setStyle({fillColor: color,
+                            weight: 2,
+                            opacity: 1,
+                            color: 'white',
+                            dashArray: '3',
+                            fillOpacity: 0.7}).addTo(polygonLayer);
+          		
+          
+        });
+    }
+
+
+    function loadTags(data) {
+    	  var selector = document.getElementById("classes");
+    		data['results'].forEach(function(element){
+    			  tags.push(element);
+    			  if(!(element['value'] == 'No Data' || element['value'] == 'Shadows' || element['value'] == 'Clouds')){
+                var opt = document.createElement("option");
+                opt.value= element['pk'];
+                opt.innerHTML = element['value'];
+                selector.appendChild(opt);
+            }
+    		});
+    }
+
+    function loadCountry(data, polygonId) {
+    		data['results'].forEach(function(element){
+    			  countries.push(element);
+    		});
+    		console.log(countries);
+    }
+
+    function paintInfo(element) {
+    		document.getElementById("country").innerHTML = getInfoFromArray(countries, element["country"], "name");
+    		document.getElementById("predicted").innerHTML = getInfoFromArray(tags, element["tag"], "value");
+    		document.getElementById("confidence").innerHTML = element["confidence"];
+    		document.getElementById("interpret").innerHTML = getInfoFromArray(tags, element["tag_editable"], "value");
+    		console.log(selectedPolygonId);
+    }
+
+    function updateInfo(obj, polygonId) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('PATCH', '/sample/'+obj["pk"]+'/');
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var objectInfo = JSON.parse(xhr.responseText);
+                polygonLayer.getLayer(polygonId).setStyle({fillColor: getColorFromId(objectInfo["tag_editable"],'color')});
+            }
+        };
+        xhr.send(JSON.stringify({
+            pk: obj["pk"],
+            tag_editable: selector.value
+        }));
+    }
+
+    console.log("hello");
+    loadUrl(tagUrl, loadTags);
+
+    
+    loadUrl(countryUrl, loadCountry);
+
+    function whenReady() {
+        loadUrl(sampleUrl, paintPolygons);
+        document.getElementById("country").addEventListener("click", function(){
+        	  if(selectedPolygonId) {
+
+        	  } else {
+        	  	console.log("No Element selected yet.")
+        	  }
+        });
+    }
+
+    if(document.readyState === "complete" || (document.readyState !== "loading" && !document.documentElement.doScroll)) {
+ 		 		whenReady();
+		} else {
+  			document.addEventListener("DOMContentLoaded", whenReady);
+		}
+
+</script>
+
+
+
+</body>
+</html>
