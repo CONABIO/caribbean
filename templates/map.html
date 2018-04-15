@@ -48,9 +48,6 @@
     <p id="interpret">Forest</p>
     <p>Forest</p>
     <select id="classes">
-        <option>Forests</option>
-        <option>Bareland</option>
-        <option>Wetland</option>
     </select>
     <button id="update">Update</button>
     <button>Validate</button>
@@ -63,12 +60,14 @@
         <button>Previous</button>
     <div>
 </div>
+{% csrf_token %}
 <script>
 		L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZjtmJRw';
     var map = L.mapbox.map('map', 'mapbox.satellite').setView([17.67267270, -61.87117753293441], 15);
 
     var controlLayers = L.control.layers().addTo(map);
     var polygonLayer = L.geoJSON();
+    
     controlLayers.addOverlay(polygonLayer, 'Caribbean Landcover');
     polygonLayer.addTo(map);
 
@@ -110,6 +109,7 @@
 		var tags = [];
 		var countries = [];
 		var selectedPolygonId = null;
+		var selectedObject = null;
 
 		function getInfoFromArray(myarray, id, field){
         var color = null;
@@ -129,9 +129,10 @@
           var color = "#fff";
           color = getInfoFromArray(tags, obj["tag_editable"], "color");
           polygon.on("click", function(event){
+										          	paintInfo(obj);
           											selectedPolygonId = polygon._leaflet_id;
+          											selectedObject = obj;
 									             	map.fitBounds(event.layer.getBounds());
-          											paintInfo(obj);
           										});
           polygon.setStyle({fillColor: color,
                             weight: 2,
@@ -151,7 +152,7 @@
     			  tags.push(element);
     			  if(!(element['value'] == 'No Data' || element['value'] == 'Shadows' || element['value'] == 'Clouds')){
                 var opt = document.createElement("option");
-                opt.value= element['pk'];
+                opt.value= element['id'];
                 opt.innerHTML = element['value'];
                 selector.appendChild(opt);
             }
@@ -174,22 +175,28 @@
     }
 
     function updateInfo(obj, polygonId) {
+       	var selector = document.getElementById("classes");
         var xhr = new XMLHttpRequest();
-        xhr.open('PATCH', '/sample/'+obj["pk"]+'/');
+        var url = '/sample/' + obj["id"] + '/';
+        var token = document.querySelectorAll('[name="csrfmiddlewaretoken"]')[0].value;
+        xhr.open('PATCH', url);
         xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('X-CSRFToken', token);
+        xhr.withCredentials = true
+        console.log(xhr);
+        console.log(selector.value);
         xhr.onload = function() {
             if (xhr.status === 200) {
                 var objectInfo = JSON.parse(xhr.responseText);
-                polygonLayer.getLayer(polygonId).setStyle({fillColor: getColorFromId(objectInfo["tag_editable"],'color')});
+                polygonLayer.getLayer(polygonId).setStyle({fillColor: getInfoFromArray(tags, objectInfo["tag_editable"], "color")});
             }
         };
         xhr.send(JSON.stringify({
             pk: obj["pk"],
-            tag_editable: selector.value
+            tag_editable: parseInt(selector.value)
         }));
     }
 
-    console.log("hello");
     loadUrl(tagUrl, loadTags);
 
     
@@ -197,9 +204,9 @@
 
     function whenReady() {
         loadUrl(sampleUrl, paintPolygons);
-        document.getElementById("country").addEventListener("click", function(){
-        	  if(selectedPolygonId) {
-
+        document.getElementById("update").addEventListener("click", function(){
+        	  if(selectedPolygonId!=null && selectedObject!=null) {
+        	  		updateInfo(selectedObject, selectedPolygonId)
         	  } else {
         	  	console.log("No Element selected yet.")
         	  }
