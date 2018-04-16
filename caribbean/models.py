@@ -20,7 +20,7 @@ class MadmexCaribesample(models.Model):
     country = models.ForeignKey('MadmexCountry', models.DO_NOTHING)
     tag = models.ForeignKey('MadmexTag', models.DO_NOTHING)
     tag_editable = models.ForeignKey('MadmexTag', models.DO_NOTHING, related_name='tag_editable_interpreter')
-
+    validated = models.BooleanField()
     class Meta:
         db_table = 'madmex_caribesample'
 
@@ -29,7 +29,7 @@ class MadmexCountry(models.Model):
     the_geom = models.MultiPolygonField()
     added = models.DateTimeField()
     user_id = models.IntegerField()
-
+    long_name = models.CharField(max_length=100)
     class Meta:
         db_table = 'madmex_country'
 

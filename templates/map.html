@@ -7,28 +7,28 @@
 
     <meta charset="utf-8" />
 
-		<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
-		<script src='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.js'></script>
-		<link href='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.css' rel='stylesheet' />
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+  <script src='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.js'></script>
+  <link href='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.css' rel='stylesheet' />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.5/lodash.js"></script>
     <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.2.0/leaflet-omnivore.min.js'></script>
     <style>
       body {
-      	margin:0;
-      	padding:0;
+          margin:0;
+          padding:0;
       }
       .map {
-      	position:absolute;
-      	left:0;
-      	width: 60%;
-      	height: 100%;
+          position:absolute;
+          left:0;
+          width: 60%;
+          height: 100%;
       }
       .controls {
-      	position:absolute;
-      	right: 0;
-      	width: 40%;
-      	height: 100%;
-      	background-color: #ccc;
+          position:absolute;
+          right: 0;
+          width: 40%;
+          height: 100%;
+          background-color: #ccc;
       }
     </style>
 </head>
@@ -59,167 +59,165 @@
 </div>
 {% csrf_token %}
 <script>
-		L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZjtmJRw';
-    var map = L.mapbox.map('map', 'mapbox.satellite').setView([17.67267270, -61.87117753293441], 15);
+L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZjtmJRw';
+  var map = L.mapbox.map('map', 'mapbox.satellite').setView([17.67267270, -61.87117753293441], 15);
+  var controlLayers = L.control.layers().addTo(map);
+  var polygonLayer = L.geoJSON();
+  controlLayers.addOverlay(polygonLayer, 'Caribbean Landcover');
+  polygonLayer.addTo(map);
 
-    var controlLayers = L.control.layers().addTo(map);
-    var polygonLayer = L.geoJSON();
-    
-    controlLayers.addOverlay(polygonLayer, 'Caribbean Landcover');
-    polygonLayer.addTo(map);
+  map.on('moveend', function(event){
+      console.log("Current position: " + map.getCenter());
+  });
 
-    map.on('moveend', function(event){
-    	console.log("Current position: " + map.getCenter());
-    });
+  var tagUrl = '/tag/';
+  var sampleUrl = '/sample/';
+  var countryUrl = '/country/';
 
-    var tagUrl = '/tag/';
-    var sampleUrl = '/sample/';
-    var countryUrl = '/country/';
+  
 
-    
+  function loadUrl(url, callback) {
+      fetch(url,{
+  headers: {
+    'Accept': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest'
+      },
+  credentials: 'include'
+              })
+          .then((response) => response.json())
+          .then(function(data) {
+              callback(data);
+              if(data.next) {
+                  loadUrl(data.next, callback);
+              }
+          }).catch(function(error) {
+              console.log(error)
+          });
+  }
 
-    function loadUrl(url, callback) {
-    	fetch(url,{
-  			headers: {
-    					'Accept': 'application/json',
-    					'X-Requested-With': 'XMLHttpRequest'
- 	 					},
-  					credentials: 'include'
-				})
-    		.then((response) => response.json())
-    		.then(function(data) {
-    			callback(data);
-    			if(data.next) {
-    				loadUrl(data.next, callback);
-    			}
-    		}).catch(function(error) {
-    			console.log(error)
-    		});
-    }
-
-    function printData(data) {
-      console.log(data)
-    }
+  function printData(data) {
+    console.log(data)
+  }
 
 
-		var painted = [];
-		var objects = [];
-		var tags = [];
-		var countries = [];
-		var selectedPolygonId = null;
-		var selectedObject = null;
+      var painted = [];
+      var objects = [];
+      var tags = [];
+      var countries = [];
+      var selectedPolygonId = null;
+      var selectedObject = null;
 
-		function getInfoFromArray(myarray, id, field){
-        var color = null;
-        myarray.forEach(function(element){
-            if(element['id'] == id) {
-                color = element[field];
-            }
-        });
-        return color;
-    }
-
-
-    function paintPolygons(data) {
-    	  data['results'].forEach(function(obj){
-          var polygon = omnivore.wkt.parse(obj["the_geom"]);
-          painted.push(polygon._leaflet_id);
-          objects.push(obj);
-          var color = "#fff";
-          color = getInfoFromArray(tags, obj["tag_editable"], "color");
-          polygon.on("click", function(event){
-										          	moveToPolygon(polygon._leaflet_id);
-          										});
-          polygon.on("mouseover", resetHighlight);
-        	polygon.on("mouseout", highlightFeature);
-          polygon.setStyle({fillColor: color,
-                            weight: 2,
-                            opacity: 1,
-                            color: 'white',
-                            dashArray: '3',
-                            fillOpacity: 0.7}).addTo(polygonLayer);
-          		
-          if(selectedObject == null) {
-          		moveToPolygon(polygon._leaflet_id);
-          }	
-        });
-    }
-
-    function moveToPolygon(id) {
-    	  var obj = getObjectFromId(id);
-    	  var polygon = polygonLayer.getLayer(id);
-				paintInfo(obj);
-				selectedPolygonId = id;
-        selectedObject = obj;
-    	  map.fitBounds(polygon.getBounds());
-    }
+      function getInfoFromArray(myarray, id, field){
+      var color = null;
+      myarray.forEach(function(element){
+          if(element['id'] == id) {
+              color = element[field];
+          }
+      });
+      return color;
+  }
 
 
-    function loadTags(data) {
-    	  var selector = document.getElementById("classes");
-    		data['results'].forEach(function(element){
-    			  tags.push(element);
-    			  if(!(element['value'] == 'No Data' || element['value'] == 'Shadows' || element['value'] == 'Clouds')){
-                var opt = document.createElement("option");
-                opt.value= element['id'];
-                opt.innerHTML = element['value'];
-                selector.appendChild(opt);
-            }
-    		});
-    }
+  function paintPolygons(data) {
+        data['results'].forEach(function(obj){
+        var polygon = omnivore.wkt.parse(obj["the_geom"]);
+        painted.push(polygon._leaflet_id);
+        objects.push(obj);
+        var color = "#fff";
+        color = getInfoFromArray(tags, obj["tag_editable"], "color");
+        polygon.on("click", function(event){
+              moveToPolygon(polygon._leaflet_id);
+          });
+        polygon.on("mouseover", resetHighlight);
+          polygon.on("mouseout", highlightFeature);
+        polygon.setStyle({fillColor: color,
+                          weight: 2,
+                          opacity: 1,
+                          color: 'white',
+                          dashArray: '3',
+                          fillOpacity: 0.7}).addTo(polygonLayer);
+                
+        if(selectedObject == null) {
+                moveToPolygon(polygon._leaflet_id);
+        }    
+      });
+  }
 
-    function loadCountry(data, polygonId) {
-    		data['results'].forEach(function(element){
-    			  countries.push(element);
-    		});
-    		console.log(countries);
-    }
+  function moveToPolygon(id) {
+        var obj = getObjectFromId(id);
+        var polygon = polygonLayer.getLayer(id);
+              paintInfo(obj);
+              selectedPolygonId = id;
+      selectedObject = obj;
+        map.fitBounds(polygon.getBounds());
+  }
 
-    function paintInfo(element) {
-    		document.getElementById("country").innerHTML = getInfoFromArray(countries, element["country"], "name");
-    		document.getElementById("predicted").innerHTML = getInfoFromArray(tags, element["tag"], "value");
-    		document.getElementById("confidence").innerHTML = element["confidence"];
-    		document.getElementById("interpret").innerHTML = getInfoFromArray(tags, element["tag_editable"], "value");
-    		console.log(selectedPolygonId);
-    }
 
-    function highlightFeature(e) {
-        var layer = e.target;
-        layer.setStyle({
-            weight: 2,
-            dashArray: '3',
-            fillOpacity: 1
-        });
-        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-            layer.bringToFront();
-        }
-    }
+  function loadTags(data) {
+        var selector = document.getElementById("classes");
+          data['results'].forEach(function(element){
+                tags.push(element);
+                if(!(element['value'] == 'No Data' || element['value'] == 'Shadows' || element['value'] == 'Clouds')){
+              var opt = document.createElement("option");
+              opt.value= element['id'];
+              opt.innerHTML = element['value'];
+              selector.appendChild(opt);
+          }
+          });
+  }
+
+  function loadCountry(data, polygonId) {
+          data['results'].forEach(function(element){
+                countries.push(element);
+          });
+          console.log(countries);
+  }
+
+  function paintInfo(element) {
+          document.getElementById("country").innerHTML = getInfoFromArray(countries, element["country"], "long_name");
+          document.getElementById("predicted").innerHTML = getInfoFromArray(tags, element["tag"], "value");
+          document.getElementById("confidence").innerHTML = element["confidence"];
+          document.getElementById("interpret").innerHTML = getInfoFromArray(tags, element["tag_editable"], "value");
+          console.log(selectedPolygonId);
+  }
+
+  function highlightFeature(e) {
+      var layer = e.target;
+      layer.setStyle({
+          weight: 2,
+          dashArray: '3',
+          fillOpacity: 1
+      });
+      if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+          layer.bringToFront();
+      }
+  }
 
     function resetHighlight(e) {
-    		var layer = e.target;
+        var layer = e.target;
         layer.setStyle({
             weight: 5,
             dashArray: '',
             fillOpacity: 0.7
         });
-		}
+    }
 
-		function getObjectFromId(id) {
-				return objects[painted.indexOf(id)];
-		}
+    function getObjectFromId(id) {
+        return objects[painted.indexOf(id)];
+    }
 
-	  function getNext(id) {
-		  	var index = painted.indexOf(selectedPolygonId);
-	  		return painted[(((index + 1) % painted.length) + painted.length) % painted.length];
-	  }
+    function getNext(id) {
+        var index = painted.indexOf(selectedPolygonId);
+        return painted[(((index + 1) % painted.length) + painted.length) % painted.length];
+    }
 
-	  function getPrev(id) {
-		  	var index = painted.indexOf(selectedPolygonId);
-	  		return painted[(((index - 1) % painted.length) + painted.length) % painted.length];
-	  }
+    function getPrev(id) {
+        var index = painted.indexOf(selectedPolygonId);
+        return painted[(((index - 1) % painted.length) + painted.length) % painted.length];
+    }
 
     function updateInfo(obj, polygonId) {
-       	var selector = document.getElementById("classes");
+        var selector = document.getElementById("classes");
         var xhr = new XMLHttpRequest();
         var url = '/sample/' + obj["id"] + '/';
         var token = document.querySelectorAll('[name="csrfmiddlewaretoken"]')[0].value;
@@ -236,54 +234,50 @@
             }
         };
         xhr.send(JSON.stringify({
-            pk: obj["pk"],
+            pk: obj["id"],
             tag_editable: parseInt(selector.value)
         }));
     }
-
     loadUrl(tagUrl, loadTags);
-
-    
     loadUrl(countryUrl, loadCountry);
 
     function whenReady() {
         loadUrl(sampleUrl, paintPolygons);
         document.getElementById("update").addEventListener("click", function(){
-        	  if(selectedPolygonId!=null && selectedObject!=null) {
-        	  		updateInfo(selectedObject, selectedPolygonId)
-        	  } else {
-        	  	console.log("No Element selected yet.")
-        	  }
+              if(selectedPolygonId!=null && selectedObject!=null) {
+                      updateInfo(selectedObject, selectedPolygonId)
+              } else {
+                  console.log("No Element selected yet.")
+              }
         });
         document.getElementById("next").addEventListener("click", function(){
-        	  if(selectedPolygonId!=null && selectedObject!=null) {
-        	  		moveToPolygon(getNext(selectedPolygonId));
-        	  } else {
-        	  	console.log("No Element selected yet.")
-        	  }
+              if(selectedPolygonId!=null && selectedObject!=null) {
+                      moveToPolygon(getNext(selectedPolygonId));
+              } else {
+                  console.log("No Element selected yet.")
+              }
         });
         document.getElementById("prev").addEventListener("click", function(){
-        	  if(selectedPolygonId!=null && selectedObject!=null) {
-        	  		moveToPolygon(getPrev(selectedPolygonId));
-        	  } else {
-        	  	console.log("No Element selected yet.")
-        	  }
+              if(selectedPolygonId!=null && selectedObject!=null) {
+                      moveToPolygon(getPrev(selectedPolygonId));
+              } else {
+                  console.log("No Element selected yet.")
+              }
         });
         document.getElementById("move").addEventListener("click", function(){
-        	  if(selectedPolygonId!=null && selectedObject!=null) {
-        	  		moveToPolygon(selectedPolygonId);
-        	  } else {
-        	  	console.log("No Element selected yet.")
-        	  }
+              if(selectedPolygonId!=null && selectedObject!=null) {
+                      moveToPolygon(selectedPolygonId);
+              } else {
+                  console.log("No Element selected yet.")
+              }
         });
-
     }
 
-    if(document.readyState === "complete" || (document.readyState !== "loading" && !document.documentElement.doScroll)) {
- 		 		whenReady();
-		} else {
-  			document.addEventListener("DOMContentLoaded", whenReady);
-		}
+  if(document.readyState === "complete" || (document.readyState !== "loading" && !document.documentElement.doScroll)) {
+                whenReady();
+      } else {
+            document.addEventListener("DOMContentLoaded", whenReady);
+      }
 
 </script>
 
