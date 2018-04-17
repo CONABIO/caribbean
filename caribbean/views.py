@@ -11,7 +11,9 @@ class SampleViewSet(viewsets.ModelViewSet):
     serializer_class = SampleSerializer
     def get_queryset(self):
         print(self.request.user.pk)
-        if self.request.user.pk is not None:
+        if self.request.user.is_superuser:
+           return MadmexCaribesample.objects.all()
+        elif self.request.user.pk is not None:
            return MadmexCaribesample.objects.filter(country__user_id=self.request.user.pk)
         else:
            return MadmexCaribesample.objects.none()
