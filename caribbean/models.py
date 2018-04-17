@@ -30,6 +30,7 @@ class MadmexCountry(models.Model):
     added = models.DateTimeField()
     user_id = models.IntegerField()
     long_name = models.CharField(max_length=100)
+    image = models.CharField(max_length=300)
     class Meta:
         db_table = 'madmex_country'
 

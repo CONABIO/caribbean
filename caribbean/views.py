@@ -29,4 +29,6 @@ class CountryViewSet(viewsets.ModelViewSet):
 
 @login_required(login_url='/login/')
 def map(request):
-    return TemplateResponse(request, 'map.html', {})
+    path = MadmexCountry.objects.get(user_id=request.user.pk).image
+    name = MadmexCountry.objects.get(user_id=request.user.pk).long_name
+    return TemplateResponse(request, 'map.html', {'path':path, 'name':name})

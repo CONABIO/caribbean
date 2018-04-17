@@ -1,4 +1,4 @@
-
+{% load static %}
 <!DOCTYPE html>
 <head>
     
@@ -29,7 +29,9 @@
           right: 0;
           width: 40%;
           height: 100%;
-          background-color: #ccc;
+      }
+      #check,#ban {
+      	display:none;
       }
     </style>
 </head>
@@ -39,26 +41,38 @@
 
 <div id="map" class="map"></div>
 <div class="controls">
-    <h1 class="title">Country</h1>
-    <p id="country"></p>
-    <p>Predicted class:</p>
-    <p id="predicted"></p>
-    <p>Confidence:</p>
-    <p id="confidence"></p>
-    <p>Interpret class:</p>
-    <p id="interpret"></p>
-    <p>Validated:</p>
-    <p id="validated"></p>
-    <select id="classes">
-    </select>
-    <button id="update">Update</button>
-    <button id="validate">Validate</button>
-    <button id="move">Move to Current</button>
-    <div>
-        <button id="prev">Previous</button>
-        <button id="next">Next</button>
-    <div>
-    <a href="{% url 'logout' %}">logout</a>
+	<div class="container">
+	  <div class="notification">
+      <h1 class="title">{{ name }}</h1>
+      <img src= "{{ path }}">
+      <p>Predicted class:</p>
+      <p id="predicted"></p>
+      <p>Confidence:</p>
+      <p id="confidence"></p>
+      <p>Interpret class:</p>
+      <p id="interpret"></p>
+      
+      <select id="classes">
+      </select>
+      <div>
+          <a class="button is-dark" id="update">Update</a>
+          <a class="button is-dark" id="validate">Validate</a>
+          <a class="button is-dark" id="move">Move to Current</a>
+      </div>
+      <p>Validated:</p>
+      <span id="check" class="icon has-text-success">
+  				<i class="fas fa-check-square"></i>
+			</span>
+			<span id="ban" class="icon has-text-danger">
+          <i class="fas fa-ban"></i>
+      </span>
+      <div>
+      		<a class="button is-info" id="prev">Previous</a>
+      		<a class="button is-info" id="next">Next</a>
+      <div>
+      <a href="{% url 'logout' %}">logout</a>
+    </div>
+  </div>
 </div>
 {% csrf_token %}
 <script>
@@ -110,7 +124,7 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
       var selectedPolygonId = null;
       var selectedObject = null;
 
-      function getInfoFromArray(myarray, id, field){
+  function getInfoFromArray(myarray, id, field){
       var color = null;
       myarray.forEach(function(element){
           if(element['id'] == id) {
@@ -177,11 +191,18 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
     }
 
     function paintInfo(element) {
-        document.getElementById("country").innerHTML = getInfoFromArray(countries, element["country"], "long_name");
         document.getElementById("predicted").innerHTML = getInfoFromArray(tags, element["tag"], "value");
         document.getElementById("confidence").innerHTML = element["confidence"];
         document.getElementById("interpret").innerHTML = getInfoFromArray(tags, element["tag_editable"], "value");
-        document.getElementById("validated").innerHTML = element["validated"];
+        if(element["validated"]) {
+        		document.getElementById("check").style.display = "block";
+        		document.getElementById("ban").style.display = "none";
+        } else {
+        	  document.getElementById("check").style.display = "none";
+        		document.getElementById("ban").style.display = "block";
+        }
+        
+
         console.log(selectedPolygonId);
     }
 
@@ -282,7 +303,7 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
         document.getElementById("validate").addEventListener("click", function(){
               if(selectedPolygonId!=null && selectedObject!=null) {
                     var selector = document.getElementById("classes");
-                    var url = '/sample/' + selectedObject["id"] + '/';
+                    var url = '/api/sample/' + selectedObject["id"] + '/';
                     var updateObj = {pk: selectedObject["id"],
                                      validated: true};
                     updateInfoBis(url, selectedPolygonId, updateObj, repaintUpdate);

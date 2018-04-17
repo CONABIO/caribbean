@@ -15,4 +15,4 @@ class TagSerializer(serializers.ModelSerializer):
 class CountrySerializer(serializers.ModelSerializer):
     class Meta:
         model = MadmexCountry
-        fields = ('id','name','long_name')
+        fields = ('id','name','long_name','image')
