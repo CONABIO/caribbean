@@ -69,14 +69,14 @@
         <div class="notification">
             <h1 class="title">{{ name }}</h1>
             <img src= "{{ path }}">
-            <p>Predicted class:</p>
-            <p id="predicted"></p>
-            <p>Confidence:</p>
-            <p id="confidence"></p>
-            <p>Interpret class:</p>
-            <p id="interpret"></p>
+            <p class="title">Predicted class:</p>
+            <p class="subtitle" id="predicted"></p>
+            <p class="title">Confidence:</p>
+            <p class="subtitle" id="confidence"></p>
+            <p class="title">Interpreted class:</p>
+            <p class="subtitle" id="interpret"></p>
             <div class="select is-primary">
-              <select id="classes">
+              <select id="classes" class="container">
                   {% for tag in tags_list %}
                       {% if tag.value != "No Data" and tag.value != "Shadows" and tag.value != "Clouds" %}
                   <option value={{ tag.id }}>{{ tag.value }}</option>
