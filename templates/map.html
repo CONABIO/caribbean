@@ -1,15 +1,16 @@
 
 <!DOCTYPE html>
-<html>
 <head>
     
-    <title>Quick Start - Leaflet</title>
+    <title>Validation Tool</title>
 
     <meta charset="utf-8" />
 
-  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
-  <script src='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.js'></script>
-  <link href='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.css' rel='stylesheet' />
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.js'></script>
+    <link href='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.css' rel='stylesheet' />
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.0/css/bulma.css' rel='stylesheet' />
+    <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.5/lodash.js"></script>
     <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.2.0/leaflet-omnivore.min.js'></script>
     <style>
@@ -38,24 +39,26 @@
 
 <div id="map" class="map"></div>
 <div class="controls">
-    <p>Country:</p>
-    <p id="country">Forest</p>
+    <h1 class="title">Country</h1>
+    <p id="country"></p>
     <p>Predicted class:</p>
-    <p id="predicted">Forest</p>
-    <p>Predicted class confidence:</p>
-    <p id="confidence">Forest</p>
+    <p id="predicted"></p>
+    <p>Confidence:</p>
+    <p id="confidence"></p>
     <p>Interpret class:</p>
-    <p id="interpret">Forest</p>
-    <p>Forest</p>
+    <p id="interpret"></p>
+    <p>Validated:</p>
+    <p id="validated"></p>
     <select id="classes">
     </select>
     <button id="update">Update</button>
-    <button>Validate</button>
+    <button id="validate">Validate</button>
     <button id="move">Move to Current</button>
     <div>
         <button id="prev">Previous</button>
         <button id="next">Next</button>
     <div>
+    <a href="{% url 'logout' %}">logout</a>
 </div>
 {% csrf_token %}
 <script>
@@ -70,9 +73,9 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
       console.log("Current position: " + map.getCenter());
   });
 
-  var tagUrl = '/tag/';
-  var sampleUrl = '/sample/';
-  var countryUrl = '/country/';
+  var tagUrl = '/api/tag/';
+  var sampleUrl = '/api/sample/';
+  var countryUrl = '/api/country/';
 
   
 
@@ -143,14 +146,14 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
       });
   }
 
-  function moveToPolygon(id) {
+    function moveToPolygon(id) {
         var obj = getObjectFromId(id);
         var polygon = polygonLayer.getLayer(id);
-              paintInfo(obj);
-              selectedPolygonId = id;
-      selectedObject = obj;
+        paintInfo(obj);
+        selectedPolygonId = id;
+        selectedObject = obj;
         map.fitBounds(polygon.getBounds());
-  }
+    }
 
 
   function loadTags(data) {
@@ -166,32 +169,40 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
           });
   }
 
-  function loadCountry(data, polygonId) {
-          data['results'].forEach(function(element){
-                countries.push(element);
-          });
-          console.log(countries);
-  }
+    function loadCountry(data, polygonId) {
+        data['results'].forEach(function(element){
+              countries.push(element);
+        });
+        console.log(countries);
+    }
 
-  function paintInfo(element) {
-          document.getElementById("country").innerHTML = getInfoFromArray(countries, element["country"], "long_name");
-          document.getElementById("predicted").innerHTML = getInfoFromArray(tags, element["tag"], "value");
-          document.getElementById("confidence").innerHTML = element["confidence"];
-          document.getElementById("interpret").innerHTML = getInfoFromArray(tags, element["tag_editable"], "value");
-          console.log(selectedPolygonId);
-  }
+    function paintInfo(element) {
+        document.getElementById("country").innerHTML = getInfoFromArray(countries, element["country"], "long_name");
+        document.getElementById("predicted").innerHTML = getInfoFromArray(tags, element["tag"], "value");
+        document.getElementById("confidence").innerHTML = element["confidence"];
+        document.getElementById("interpret").innerHTML = getInfoFromArray(tags, element["tag_editable"], "value");
+        document.getElementById("validated").innerHTML = element["validated"];
+        console.log(selectedPolygonId);
+    }
 
-  function highlightFeature(e) {
-      var layer = e.target;
-      layer.setStyle({
-          weight: 2,
-          dashArray: '3',
-          fillOpacity: 1
-      });
-      if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-          layer.bringToFront();
-      }
-  }
+    function repaintUpdate(objectInfo, polygonId) {
+        polygonLayer.getLayer(polygonId).setStyle({fillColor: getInfoFromArray(tags, objectInfo["tag_editable"], "color")});
+        selectedObject = objectInfo;
+        console.log(selectedObject);
+        paintInfo(objectInfo);
+    }
+
+    function highlightFeature(e) {
+        var layer = e.target;
+        layer.setStyle({
+            weight: 2,
+            dashArray: '3',
+            fillOpacity: 1
+        });
+        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+            layer.bringToFront();
+        }
+    }
 
     function resetHighlight(e) {
         var layer = e.target;
@@ -216,27 +227,20 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
         return painted[(((index - 1) % painted.length) + painted.length) % painted.length];
     }
 
-    function updateInfo(obj, polygonId) {
-        var selector = document.getElementById("classes");
+    function updateInfoBis(url, polygonId, updateObj, callback) {
         var xhr = new XMLHttpRequest();
-        var url = '/sample/' + obj["id"] + '/';
         var token = document.querySelectorAll('[name="csrfmiddlewaretoken"]')[0].value;
         xhr.open('PATCH', url);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.setRequestHeader('X-CSRFToken', token);
         xhr.withCredentials = true
-        console.log(xhr);
-        console.log(selector.value);
         xhr.onload = function() {
             if (xhr.status === 200) {
                 var objectInfo = JSON.parse(xhr.responseText);
-                polygonLayer.getLayer(polygonId).setStyle({fillColor: getInfoFromArray(tags, objectInfo["tag_editable"], "color")});
+                callback(objectInfo, polygonId);
             }
         };
-        xhr.send(JSON.stringify({
-            pk: obj["id"],
-            tag_editable: parseInt(selector.value)
-        }));
+        xhr.send(JSON.stringify(updateObj));
     }
     loadUrl(tagUrl, loadTags);
     loadUrl(countryUrl, loadCountry);
@@ -245,7 +249,11 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
         loadUrl(sampleUrl, paintPolygons);
         document.getElementById("update").addEventListener("click", function(){
               if(selectedPolygonId!=null && selectedObject!=null) {
-                      updateInfo(selectedObject, selectedPolygonId)
+                    var selector = document.getElementById("classes");
+                    var url = '/api/sample/' + selectedObject["id"] + '/';
+                    var updateObj = {pk: selectedObject["id"],
+                                     tag_editable: parseInt(selector.value)};
+                    updateInfoBis(url, selectedPolygonId, updateObj, repaintUpdate);
               } else {
                   console.log("No Element selected yet.")
               }
@@ -267,6 +275,17 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
         document.getElementById("move").addEventListener("click", function(){
               if(selectedPolygonId!=null && selectedObject!=null) {
                       moveToPolygon(selectedPolygonId);
+              } else {
+                  console.log("No Element selected yet.")
+              }
+        });
+        document.getElementById("validate").addEventListener("click", function(){
+              if(selectedPolygonId!=null && selectedObject!=null) {
+                    var selector = document.getElementById("classes");
+                    var url = '/sample/' + selectedObject["id"] + '/';
+                    var updateObj = {pk: selectedObject["id"],
+                                     validated: true};
+                    updateInfoBis(url, selectedPolygonId, updateObj, repaintUpdate);
               } else {
                   console.log("No Element selected yet.")
               }

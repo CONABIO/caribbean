@@ -46,6 +46,8 @@ ALLOWED_HOSTS = [os.environ.get('ALLOWED_HOSTS', 'localhost')]
 # Application definition
 
 INSTALLED_APPS = [
+    'material',
+    'material.frontend',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -149,4 +151,4 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-LOGIN_REDIRECT_URL = '/map'
+LOGIN_REDIRECT_URL = '/'

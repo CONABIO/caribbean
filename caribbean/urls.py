@@ -25,8 +25,8 @@ router.register(r'sample', views.SampleViewSet)
 router.register(r'country', views.CountryViewSet)
 router.register(r'tag', views.TagViewSet)
 urlpatterns = [
-    url(r'^', include(router.urls)),
+    url(r'^api/', include(router.urls)),
     url(r'^login/$', auth_views.login, {'template_name': 'login.html'}, name='login'),
     url(r'^logout/$', auth_views.logout, {'template_name': 'logout.html'}, name='logout'),
-    url(r'^map/$', views.map, name='map'),
+    url(r'^$', views.map, name=''),
 ]
