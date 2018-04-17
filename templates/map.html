@@ -79,7 +79,7 @@
               <select id="classes">
                   {% for tag in tags_list %}
                       {% if tag.value != "No Data" and tag.value != "Shadows" and tag.value != "Clouds" %}
-                  <option value={{ tag.numeric_code }}>{{ tag.value }}</option>
+                  <option value={{ tag.id }}>{{ tag.value }}</option>
                       {% endif %}
                   {% endfor %}
               </select>
@@ -138,16 +138,12 @@
             });
     }
 
-    function printData(data) {
-      console.log(data)
-    }
-
-        var painted = [];
-        var objects = [];
-        var tags = {{ tags|safe }};
-        var countries = {{ countries|safe }};
-        var selectedPolygonId = null;
-        var selectedObject = null;
+    var painted = [];
+    var objects = [];
+    var tags = {{ tags|safe }};
+    var countries = {{ countries|safe }};
+    var selectedPolygonId = null;
+    var selectedObject = null;
 
     function getInfoFromArray(myarray, id, field){
         var color = null;
@@ -232,8 +228,8 @@
     function repaintUpdate(objectInfo, polygonId) {
         polygonLayer.getLayer(polygonId).setStyle({fillColor: getInfoFromArray(tags, objectInfo["tag_editable"], "color")});
         selectedObject = objectInfo;
-        console.log(selectedObject);
-        paintInfo(objectInfo);
+        objects[painted.indexOf(polygonId)] = selectedObject;
+        paintInfo(selectedObject);
     }
 
     function highlightFeature(e) {
@@ -285,6 +281,7 @@
             }
         };
         xhr.send(JSON.stringify(updateObj));
+        console.log(xhr);
     }
 
     var legend = L.control({position: 'bottomleft'});
@@ -306,47 +303,51 @@
     function whenReady() {
         loadUrl(sampleUrl, paintPolygons);
         document.getElementById("update").addEventListener("click", function(){
-              if(selectedPolygonId!=null && selectedObject!=null) {
-                    var selector = document.getElementById("classes");
-                    var url = '/api/sample/' + selectedObject["id"] + '/';
-                    var updateObj = {pk: selectedObject["id"],
-                                     tag_editable: selector.value};
-                    updateInfoBis(url, selectedPolygonId, updateObj, repaintUpdate);
-              } else {
-                  console.log("No Element selected yet.");
-              }
+            if(selectedPolygonId!=null && selectedObject!=null) {
+                console.log(selectedObject);
+                var selector = document.getElementById("classes");
+                var url = '/api/sample/' + selectedObject["id"] + '/';
+                var updateObj = {pk: selectedObject["id"],
+                                 tag_editable: parseInt(selector.value)};
+                updateInfoBis(url, selectedPolygonId, updateObj, repaintUpdate);
+            } else {
+                console.log("No Element selected yet.");
+            }
         });
         document.getElementById("next").addEventListener("click", function(){
-              if(selectedPolygonId!=null && selectedObject!=null) {
-                      moveToPolygon(getNext(selectedPolygonId));
-              } else {
-                  console.log("No Element selected yet.")
-              }
+            if(selectedPolygonId!=null && selectedObject!=null) {
+                moveToPolygon(getNext(selectedPolygonId));
+                console.log(selectedPolygonId);
+
+            } else {
+                console.log("No Element selected yet.")
+            }
         });
         document.getElementById("prev").addEventListener("click", function(){
-              if(selectedPolygonId!=null && selectedObject!=null) {
-                      moveToPolygon(getPrev(selectedPolygonId));
-              } else {
-                  console.log("No Element selected yet.")
-              }
+            if(selectedPolygonId!=null && selectedObject!=null) {
+                moveToPolygon(getPrev(selectedPolygonId));
+                console.log(selectedPolygonId);
+            } else {
+                console.log("No Element selected yet.")
+            }
         });
         document.getElementById("move").addEventListener("click", function(){
-              if(selectedPolygonId!=null && selectedObject!=null) {
-                      moveToPolygon(selectedPolygonId);
-              } else {
-                  console.log("No Element selected yet.")
-              }
+            if(selectedPolygonId!=null && selectedObject!=null) {
+                    moveToPolygon(selectedPolygonId);
+            } else {
+                console.log("No Element selected yet.")
+            }
         });
         document.getElementById("validate").addEventListener("click", function(){
-              if(selectedPolygonId!=null && selectedObject!=null) {
-                    var selector = document.getElementById("classes");
-                    var url = '/api/sample/' + selectedObject["id"] + '/';
-                    var updateObj = {pk: selectedObject["id"],
-                                     validated: true};
-                    updateInfoBis(url, selectedPolygonId, updateObj, repaintUpdate);
-              } else {
-                  console.log("No Element selected yet.")
-              }
+            if(selectedPolygonId!=null && selectedObject!=null) {
+                var selector = document.getElementById("classes");
+                var url = '/api/sample/' + selectedObject["id"] + '/';
+                var updateObj = {pk: selectedObject["id"],
+                                 validated: true};
+                updateInfoBis(url, selectedPolygonId, updateObj, repaintUpdate);
+            } else {
+                console.log("No Element selected yet.")
+            }
         });
     }
 
