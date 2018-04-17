@@ -4,6 +4,7 @@ from rest_framework import viewsets
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
+import json
 import requests
 
 class SampleViewSet(viewsets.ModelViewSet):   
@@ -31,4 +32,11 @@ class CountryViewSet(viewsets.ModelViewSet):
 def map(request):
     path = MadmexCountry.objects.get(user_id=request.user.pk).image
     name = MadmexCountry.objects.get(user_id=request.user.pk).long_name
-    return TemplateResponse(request, 'map.html', {'path':path, 'name':name})
+    countries = json.dumps(CountrySerializer(MadmexCountry.objects.all(), many=True).data)
+    tags_list = TagSerializer(MadmexTag.objects.all(), many=True).data
+    tags = json.dumps(tags_list)
+    return TemplateResponse(request, 'map.html', {'path':path, 
+                                                  'name':name,
+                                                  'countries':countries,
+                                                  'tags':tags,
+                                                  'tags_list':tags_list})

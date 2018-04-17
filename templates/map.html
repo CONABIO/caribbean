@@ -31,7 +31,31 @@
           height: 100%;
       }
       #check,#ban {
-      	display:none;
+          display:none;
+      }
+      .legend {
+          line-height: 18px;
+          color: #555;
+      }
+      .legend i {
+          width: 18px;
+          height: 18px;
+          float: left;
+          margin-right: 8px;
+          opacity: 0.7;
+      }
+      .info { 
+          padding: 6px 8px; 
+          font: 14px/16px Arial, Helvetica, sans-serif; 
+          background: white; 
+          background: rgba(255,255,255,0.8); 
+          box-shadow: 0 0 15px 
+          rgba(0,0,0,0.2); 
+          border-radius: 5px; 
+      }
+      .info h4 { margin: 0 0 5px; color: #777; }
+      .legend div {
+        padding: 6px;
       }
     </style>
 </head>
@@ -41,124 +65,123 @@
 
 <div id="map" class="map"></div>
 <div class="controls">
-	<div class="container">
-	  <div class="notification">
-      <h1 class="title">{{ name }}</h1>
-      <img src= "{{ path }}">
-      <p>Predicted class:</p>
-      <p id="predicted"></p>
-      <p>Confidence:</p>
-      <p id="confidence"></p>
-      <p>Interpret class:</p>
-      <p id="interpret"></p>
-      
-      <select id="classes">
-      </select>
-      <div>
-          <a class="button is-dark" id="update">Update</a>
-          <a class="button is-dark" id="validate">Validate</a>
-          <a class="button is-dark" id="move">Move to Current</a>
-      </div>
-      <p>Validated:</p>
-      <span id="check" class="icon has-text-success">
-  				<i class="fas fa-check-square"></i>
-			</span>
-			<span id="ban" class="icon has-text-danger">
-          <i class="fas fa-ban"></i>
-      </span>
-      <div>
-      		<a class="button is-info" id="prev">Previous</a>
-      		<a class="button is-info" id="next">Next</a>
-      <div>
-      <a href="{% url 'logout' %}">logout</a>
+    <div class="container">
+        <div class="notification">
+            <h1 class="title">{{ name }}</h1>
+            <img src= "{{ path }}">
+            <p>Predicted class:</p>
+            <p id="predicted"></p>
+            <p>Confidence:</p>
+            <p id="confidence"></p>
+            <p>Interpret class:</p>
+            <p id="interpret"></p>
+            <div class="select is-primary">
+              <select id="classes">
+                  {% for tag in tags_list %}
+                      {% if tag.value != "No Data" and tag.value != "Shadows" and tag.value != "Clouds" %}
+                  <option value={{ tag.numeric_code }}>{{ tag.value }}</option>
+                      {% endif %}
+                  {% endfor %}
+              </select>
+            </div>
+            <div>
+                <a class="button is-dark" id="update">Update</a>
+                <a class="button is-dark" id="validate">Validate</a>
+                <a class="button is-dark" id="move">Move to Current</a>
+            </div>
+            <p>Validated:</p>
+            <span id="check" class="icon has-text-success">
+                <i class="fas fa-check-square"></i>
+            </span>
+            <span id="ban" class="icon has-text-danger">
+                <i class="fas fa-ban"></i>
+            </span>
+            <div>
+                <a class="button is-info" id="prev">Previous</a>
+                <a class="button is-info" id="next">Next</a>
+            <div>
+            <a href="{% url 'logout' %}">logout</a>
+        </div>
     </div>
-  </div>
 </div>
 {% csrf_token %}
 <script>
-L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZjtmJRw';
-  var map = L.mapbox.map('map', 'mapbox.satellite').setView([17.67267270, -61.87117753293441], 15);
-  var controlLayers = L.control.layers().addTo(map);
-  var polygonLayer = L.geoJSON();
-  controlLayers.addOverlay(polygonLayer, 'Caribbean Landcover');
-  polygonLayer.addTo(map);
+    L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZjtmJRw';
+    var map = L.mapbox.map('map', 'mapbox.satellite').setView([17.67267270, -61.87117753293441], 15);
+    var controlLayers = L.control.layers().addTo(map);
+    var polygonLayer = L.geoJSON();
+    controlLayers.addOverlay(polygonLayer, 'Caribbean Landcover');
+    polygonLayer.addTo(map);
+    map.on('moveend', function(event){
+        console.log("Current position: " + map.getCenter());
+    });
+    var tagUrl = '/api/tag/';
+    var sampleUrl = '/api/sample/';
+    var countryUrl = '/api/country/';
 
-  map.on('moveend', function(event){
-      console.log("Current position: " + map.getCenter());
-  });
+    function loadUrl(url, callback) {
+        fetch(url,{
+    headers: {
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
+        },
+    credentials: 'include'
+                })
+            .then((response) => response.json())
+            .then(function(data) {
+                callback(data);
+                if(data.next) {
+                    loadUrl(data.next, callback);
+                }
+            }).catch(function(error) {
+                console.log(error)
+            });
+    }
 
-  var tagUrl = '/api/tag/';
-  var sampleUrl = '/api/sample/';
-  var countryUrl = '/api/country/';
+    function printData(data) {
+      console.log(data)
+    }
 
-  
+        var painted = [];
+        var objects = [];
+        var tags = {{ tags|safe }};
+        var countries = {{ countries|safe }};
+        var selectedPolygonId = null;
+        var selectedObject = null;
 
-  function loadUrl(url, callback) {
-      fetch(url,{
-  headers: {
-    'Accept': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest'
-      },
-  credentials: 'include'
-              })
-          .then((response) => response.json())
-          .then(function(data) {
-              callback(data);
-              if(data.next) {
-                  loadUrl(data.next, callback);
-              }
-          }).catch(function(error) {
-              console.log(error)
-          });
-  }
+    function getInfoFromArray(myarray, id, field){
+        var color = null;
+        myarray.forEach(function(element){
+            if(element['id'] == id) {
+                color = element[field];
+            }
+        });
+        return color;
+    }
 
-  function printData(data) {
-    console.log(data)
-  }
-
-
-      var painted = [];
-      var objects = [];
-      var tags = [];
-      var countries = [];
-      var selectedPolygonId = null;
-      var selectedObject = null;
-
-  function getInfoFromArray(myarray, id, field){
-      var color = null;
-      myarray.forEach(function(element){
-          if(element['id'] == id) {
-              color = element[field];
-          }
-      });
-      return color;
-  }
-
-
-  function paintPolygons(data) {
-        data['results'].forEach(function(obj){
-        var polygon = omnivore.wkt.parse(obj["the_geom"]);
-        painted.push(polygon._leaflet_id);
-        objects.push(obj);
-        var color = "#fff";
-        color = getInfoFromArray(tags, obj["tag_editable"], "color");
-        polygon.on("click", function(event){
-              moveToPolygon(polygon._leaflet_id);
-          });
-        polygon.on("mouseover", resetHighlight);
-          polygon.on("mouseout", highlightFeature);
-        polygon.setStyle({fillColor: color,
-                          weight: 2,
-                          opacity: 1,
-                          color: 'white',
-                          dashArray: '3',
-                          fillOpacity: 0.7}).addTo(polygonLayer);
-                
-        if(selectedObject == null) {
+    function paintPolygons(data) {
+          data['results'].forEach(function(obj){
+          var polygon = omnivore.wkt.parse(obj["the_geom"]);
+          painted.push(polygon._leaflet_id);
+          objects.push(obj);
+          var color = "#fff";
+          color = getInfoFromArray(tags, obj["tag_editable"], "color");
+          polygon.on("click", function(event){
                 moveToPolygon(polygon._leaflet_id);
-        }    
-      });
-  }
+            });
+          polygon.on("mouseover", resetHighlight);
+            polygon.on("mouseout", highlightFeature);
+          polygon.setStyle({fillColor: color,
+                            weight: 2,
+                            opacity: 1,
+                            color: 'white',
+                            dashArray: '3',
+                            fillOpacity: 0.7}).addTo(polygonLayer);
+          if(selectedObject == null) {
+                  moveToPolygon(polygon._leaflet_id);
+          }    
+        });
+    }
 
     function moveToPolygon(id) {
         var obj = getObjectFromId(id);
@@ -169,41 +192,41 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
         map.fitBounds(polygon.getBounds());
     }
 
-
-  function loadTags(data) {
+    /**
+    function loadTags(data) {
         var selector = document.getElementById("classes");
-          data['results'].forEach(function(element){
-                tags.push(element);
-                if(!(element['value'] == 'No Data' || element['value'] == 'Shadows' || element['value'] == 'Clouds')){
-              var opt = document.createElement("option");
-              opt.value= element['id'];
-              opt.innerHTML = element['value'];
-              selector.appendChild(opt);
-          }
-          });
-  }
+        data['results'].forEach(function(element){
+            tags.push(element);
+            if(!(element['value'] == 'No Data' || element['value'] == 'Shadows' || element['value'] == 'Clouds')){
+                var opt = document.createElement("option");
+                opt.value= element['id'];
+                opt.innerHTML = element['value'];
+                selector.appendChild(opt);
+            }
+        });
+    }
+    **/
 
+    /**
     function loadCountry(data, polygonId) {
         data['results'].forEach(function(element){
               countries.push(element);
         });
         console.log(countries);
     }
+    **/
 
     function paintInfo(element) {
         document.getElementById("predicted").innerHTML = getInfoFromArray(tags, element["tag"], "value");
         document.getElementById("confidence").innerHTML = element["confidence"];
         document.getElementById("interpret").innerHTML = getInfoFromArray(tags, element["tag_editable"], "value");
         if(element["validated"]) {
-        		document.getElementById("check").style.display = "block";
-        		document.getElementById("ban").style.display = "none";
+                document.getElementById("check").style.display = "block";
+                document.getElementById("ban").style.display = "none";
         } else {
-        	  document.getElementById("check").style.display = "none";
-        		document.getElementById("ban").style.display = "block";
+                document.getElementById("check").style.display = "none";
+                document.getElementById("ban").style.display = "block";
         }
-        
-
-        console.log(selectedPolygonId);
     }
 
     function repaintUpdate(objectInfo, polygonId) {
@@ -263,8 +286,22 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
         };
         xhr.send(JSON.stringify(updateObj));
     }
-    loadUrl(tagUrl, loadTags);
-    loadUrl(countryUrl, loadCountry);
+
+    var legend = L.control({position: 'bottomleft'});
+
+    legend.onAdd = function (map) {
+        var div = L.DomUtil.create('div', 'info legend');
+        tags.forEach(function (element){
+            if(!(element['value'] == 'No Data' || element['value'] == 'Shadows' || element['value'] == 'Clouds')){
+                div.innerHTML +=
+                    '<div><i style="background:' + element['color'] + '"></i> ' +
+                    element['value'] + '</div>';
+            }
+        });
+        return div;
+    };
+
+    legend.addTo(map);
 
     function whenReady() {
         loadUrl(sampleUrl, paintPolygons);
@@ -273,10 +310,10 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiYW1hdSIsImEiOiIxTmxLVWlVIn0.JJuKgBjkpUtOs0VZj
                     var selector = document.getElementById("classes");
                     var url = '/api/sample/' + selectedObject["id"] + '/';
                     var updateObj = {pk: selectedObject["id"],
-                                     tag_editable: parseInt(selector.value)};
+                                     tag_editable: selector.value};
                     updateInfoBis(url, selectedPolygonId, updateObj, repaintUpdate);
               } else {
-                  console.log("No Element selected yet.")
+                  console.log("No Element selected yet.");
               }
         });
         document.getElementById("next").addEventListener("click", function(){
