@@ -3,15 +3,12 @@
 <head>
     
     <title>Validation Tool</title>
-
     <meta charset="utf-8" />
-
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
     <script src='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.js'></script>
     <link href='https://api.mapbox.com/mapbox.js/v3.1.1/mapbox.css' rel='stylesheet' />
     <link href='https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.0/css/bulma.css' rel='stylesheet' />
     <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.5/lodash.js"></script>
     <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.2.0/leaflet-omnivore.min.js'></script>
     <style>
       body {
@@ -188,30 +185,6 @@
         map.fitBounds(polygon.getBounds());
     }
 
-    /**
-    function loadTags(data) {
-        var selector = document.getElementById("classes");
-        data['results'].forEach(function(element){
-            tags.push(element);
-            if(!(element['value'] == 'No Data' || element['value'] == 'Shadows' || element['value'] == 'Clouds')){
-                var opt = document.createElement("option");
-                opt.value= element['id'];
-                opt.innerHTML = element['value'];
-                selector.appendChild(opt);
-            }
-        });
-    }
-    **/
-
-    /**
-    function loadCountry(data, polygonId) {
-        data['results'].forEach(function(element){
-              countries.push(element);
-        });
-        console.log(countries);
-    }
-    **/
-
     function paintInfo(element) {
         document.getElementById("predicted").innerHTML = getInfoFromArray(tags, element["tag"], "value");
         document.getElementById("confidence").innerHTML = element["confidence"];
@@ -358,8 +331,5 @@
       }
 
 </script>
-
-
-
 </body>
 </html>
