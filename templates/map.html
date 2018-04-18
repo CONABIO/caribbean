@@ -112,9 +112,9 @@
     map.on('moveend', function(event){
         console.log("Current position: " + map.getCenter());
     });
-    var tagUrl = '/api/tag/';
-    var sampleUrl = '/api/sample/';
-    var countryUrl = '/api/country/';
+    var tagUrl = '/caribbeanapi/tag/';
+    var sampleUrl = '/caribbeanapi/sample/';
+    var countryUrl = '/caribbeanapi/country/';
 
     function loadUrl(url, callback) {
         fetch(url,{
@@ -279,7 +279,7 @@
             if(selectedPolygonId!=null && selectedObject!=null) {
                 console.log(selectedObject);
                 var selector = document.getElementById("classes");
-                var url = '/api/sample/' + selectedObject["id"] + '/';
+                var url = '/caribbeanapi/sample/' + selectedObject["id"] + '/';
                 var updateObj = {pk: selectedObject["id"],
                                  tag_editable: parseInt(selector.value)};
                 updateInfoBis(url, selectedPolygonId, updateObj, repaintUpdate);
@@ -314,7 +314,7 @@
         document.getElementById("validate").addEventListener("click", function(){
             if(selectedPolygonId!=null && selectedObject!=null) {
                 var selector = document.getElementById("classes");
-                var url = '/api/sample/' + selectedObject["id"] + '/';
+                var url = '/caribbeanapi/sample/' + selectedObject["id"] + '/';
                 var updateObj = {pk: selectedObject["id"],
                                  validated: true};
                 updateInfoBis(url, selectedPolygonId, updateObj, repaintUpdate);
