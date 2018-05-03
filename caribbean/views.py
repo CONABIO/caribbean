@@ -1,10 +1,13 @@
 from caribbean.models import MadmexCaribesample, MadmexTag, MadmexCountry
 from caribbean.serializers import SampleSerializer, TagSerializer, CountrySerializer
 from rest_framework import viewsets
+from django.core import serializers
+from django.http import JsonResponse
 from django.http import HttpResponse
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 import json
+from django.http import JsonResponse
 import requests
 
 class SampleViewSet(viewsets.ModelViewSet):   
@@ -27,6 +30,19 @@ class TagViewSet(viewsets.ModelViewSet):
 class CountryViewSet(viewsets.ModelViewSet):   
     queryset = MadmexCountry.objects.all()
     serializer_class = CountrySerializer
+
+@login_required(login_url='/login/')
+def count(request):
+    if request.user.is_superuser:
+        validated = MadmexCaribesample.objects.filter(validated=True).count()
+        not_validated = MadmexCaribesample.objects.filter(validated=False).count()
+    else:
+        validated = MadmexCaribesample.objects.filter(country__user_id=request.user.pk, validated=True).count()
+        remaining = MadmexCaribesample.objects.filter(country__user_id=request.user.pk, validated=False).count()
+    result = {'validated':validated,
+              'remaining':remaining}
+    return JsonResponse(result)
+
 
 @login_required(login_url='/login/')
 def map(request):

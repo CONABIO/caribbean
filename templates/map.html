@@ -81,6 +81,10 @@
                   {% endfor %}
               </select>
             </div>
+            <p class="title">Validated:</p>
+            <p class="subtitle" id="validated"></p>
+            <p class="title">Remaining:</p>
+            <p class="subtitle" id="remaining"></p>
             <div>
                 <a class="button is-dark" id="update">Update</a>
                 <a class="button is-dark" id="validate">Validate</a>
@@ -115,6 +119,7 @@
     var tagUrl = '/caribbeanapi/tag/';
     var sampleUrl = '/caribbeanapi/sample/';
     var countryUrl = '/caribbeanapi/country/';
+    var countUrl = '/count/';
 
     function loadUrl(url, callback) {
         fetch(url,{
@@ -198,11 +203,21 @@
         }
     }
 
+    function printRequest(content) {
+        console.log(content);
+        var validatedTag = document.getElementById("validated");
+        var remainingTag = document.getElementById("remaining");
+
+        validatedTag.innerHTML = content["validated"];
+        remainingTag.innerHTML = content["remaining"];
+    }
+
     function repaintUpdate(objectInfo, polygonId) {
         polygonLayer.getLayer(polygonId).setStyle({fillColor: getInfoFromArray(tags, objectInfo["tag_editable"], "color")});
         selectedObject = objectInfo;
         objects[painted.indexOf(polygonId)] = selectedObject;
         paintInfo(selectedObject);
+        loadUrl(countUrl, printRequest);
     }
 
     function highlightFeature(e) {
@@ -275,6 +290,7 @@
 
     function whenReady() {
         loadUrl(sampleUrl, paintPolygons);
+        loadUrl(countUrl, printRequest);
         document.getElementById("update").addEventListener("click", function(){
             if(selectedPolygonId!=null && selectedObject!=null) {
                 console.log(selectedObject);
