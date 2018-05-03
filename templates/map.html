@@ -206,14 +206,25 @@
 
     function highlightFeature(e) {
         var layer = e.target;
-        layer.setStyle({
-            color: 'red',
-        });
+        if(selectedPolygonId != layer._leaflet_id){
+          layer.setStyle({
+              color: 'red',
+          });
+        }
     }
 
     function moveToPolygon(id) {
         var obj = getObjectFromId(id);
-        var polygon = polygonLayer.getLayer(id);
+        
+        if(selectedObject != null) {
+            var polygon = polygonLayer.getLayer(selectedPolygonId);
+            polygon.setStyle({
+              color: 'white',
+            });
+        }
+        
+
+        polygon = polygonLayer.getLayer(id);
         paintInfo(obj);
         selectedPolygonId = id;
         selectedObject = obj;
