@@ -30,8 +30,12 @@ class CountryViewSet(viewsets.ModelViewSet):
 
 @login_required(login_url='/login/')
 def map(request):
-    path = MadmexCountry.objects.get(user_id=request.user.pk).image
-    name = MadmexCountry.objects.get(user_id=request.user.pk).long_name
+    if request.user.is_superuser:
+      path = 'https://raw.githubusercontent.com/hjnilsson/country-flags/master/png250px/mx.png'
+      name = 'Admin'
+    else:
+      path = MadmexCountry.objects.get(user_id=request.user.pk).image
+      name = MadmexCountry.objects.get(user_id=request.user.pk).long_name
     countries = json.dumps(CountrySerializer(MadmexCountry.objects.all(), many=True).data)
     tags_list = TagSerializer(MadmexTag.objects.all(), many=True).data
     tags = json.dumps(tags_list)

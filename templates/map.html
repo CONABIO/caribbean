@@ -73,7 +73,7 @@
             <p class="title">Interpreted class:</p>
             <p class="subtitle" id="interpret"></p>
             <div class="select is-primary">
-              <select id="classes" class="container">
+              <select id="classes">
                   {% for tag in tags_list %}
                       {% if tag.value != "No Data" and tag.value != "Shadows" and tag.value != "Clouds" %}
                   <option value={{ tag.id }}>{{ tag.value }}</option>
