@@ -259,6 +259,7 @@
     function repaintUpdate(objectInfo, polygonId) {
         var fillOpacity = .5;
         var dashArray = '10';
+        var validated = objectInfo["validated"];
         if(validated) {
            fillOpacity = 1;
            dashArray = '';
