@@ -16,11 +16,12 @@ class SampleViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         print(self.request.user.pk)
         if self.request.user.is_superuser:
-           return MadmexCaribesample.objects.all()
+           queryset = MadmexCaribesample.objects.all()
         elif self.request.user.pk is not None:
-           return MadmexCaribesample.objects.filter(country__user_id=self.request.user.pk)
+           queryset = MadmexCaribesample.objects.filter(country__user_id=self.request.user.pk)
         else:
-           return MadmexCaribesample.objects.none()
+           queryset = MadmexCaribesample.objects.none()
+        return queryset.order_by('validated')
 
 class TagViewSet(viewsets.ModelViewSet):   
     queryset = MadmexTag.objects.all()
