@@ -33,9 +33,10 @@ class CountryViewSet(viewsets.ModelViewSet):
 
 @login_required(login_url='/login/')
 def count(request):
+    print("Hello")
     if request.user.is_superuser:
         validated = MadmexCaribesample.objects.filter(validated=True).count()
-        not_validated = MadmexCaribesample.objects.filter(validated=False).count()
+        remaining = MadmexCaribesample.objects.filter(validated=False).count()
     else:
         validated = MadmexCaribesample.objects.filter(country__user_id=request.user.pk, validated=True).count()
         remaining = MadmexCaribesample.objects.filter(country__user_id=request.user.pk, validated=False).count()

@@ -257,7 +257,18 @@
     }
 
     function repaintUpdate(objectInfo, polygonId) {
-        polygonLayer.getLayer(polygonId).setStyle({fillColor: getInfoFromArray(tags, objectInfo["tag_editable"], "color")});
+        var fillOpacity = .5;
+        var dashArray = '10';
+        if(validated) {
+           fillOpacity = 1;
+           dashArray = '';
+        }
+        polygonLayer.getLayer(polygonId).setStyle({
+            fillColor: getInfoFromArray(tags, objectInfo["tag_editable"], "color"),
+            opacity: fillOpacity,
+            fillOpacity: fillOpacity,
+            dashArray: dashArray
+        });
         selectedObject = objectInfo;
         objects[painted.indexOf(polygonId)] = selectedObject;
         paintInfo(selectedObject);
